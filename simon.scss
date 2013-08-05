@@ -1,0 +1,28 @@
+@import "compass/reset";
+@import "compass/css3";
+
+$button-size: 200px;
+$columns: 2;
+
+.simon-buttons {
+    width: $button-size * $columns;
+    margin: 20px auto;
+}
+
+.simon-button {
+    @include opacity(0.4);
+    @include inline-block;
+    height: $button-size;
+    width: $button-size;
+    cursor: pointer;
+    &:hover, &.hover {
+        @include opacity(1);
+    }
+}
+
+.simon-button-1 { background: red; }
+.simon-button-2 { background: blue; }
+.simon-button-3 { background: green; }
+.simon-button-4 { background: yellow; }
+.simon-button-5 { background: pink; }
+.simon-button-6 { background: orange; }
