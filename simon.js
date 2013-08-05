@@ -38,7 +38,6 @@
       this.waitingToLoadCount = 0;
       this.playing = [];
       window.AudioContext = window.AudioContext || window.webkitAudioContext;
-      window.AudioContext = null;
       if (AudioContext) {
         this.supported = true;
         this.context = new AudioContext();

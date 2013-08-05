@@ -157,3 +157,7 @@ article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, 
 .game-over {
   display: none;
 }
+/* line 56, simon.scss */
+.game-over .num-rounds {
+  padding-left: 5px;
+}

@@ -18,7 +18,6 @@ class AudioManager
     @waitingToLoadCount = 0
     @playing = []
     window.AudioContext = window.AudioContext || window.webkitAudioContext
-    window.AudioContext = null
     if AudioContext
       @supported = true
       @context = new AudioContext()
