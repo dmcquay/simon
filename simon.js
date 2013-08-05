@@ -36,14 +36,25 @@
     function AudioManager() {
       this.buffers = {};
       this.waitingToLoadCount = 0;
-      window.AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.context = new AudioContext();
       this.playing = [];
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      window.AudioContext = null;
+      if (AudioContext) {
+        this.supported = true;
+        this.context = new AudioContext();
+      } else {
+        this.support = false;
+        this.context = null;
+        alert("Audio for this game is not supported on your device.");
+      }
     }
 
     AudioManager.prototype.load = function(uri, name) {
       var request, self;
 
+      if (!this.supported) {
+        return;
+      }
       self = this;
       this.waitingToLoadCount++;
       request = new XMLHttpRequest();
@@ -62,6 +73,9 @@
     AudioManager.prototype.play = function(name) {
       var source;
 
+      if (!this.supported) {
+        return;
+      }
       source = this.context.createBufferSource();
       source.buffer = this.buffers[name];
       source.connect(this.context.destination);
@@ -76,6 +90,9 @@
     AudioManager.prototype.stopAll = function() {
       var info, name, source, _i, _len, _ref;
 
+      if (!this.supported) {
+        return;
+      }
       _ref = this.playing;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         info = _ref[_i];
@@ -88,6 +105,9 @@
     AudioManager.prototype.stopMatch = function(pattern) {
       var info, name, newPlaying, source, _i, _len, _ref;
 
+      if (!this.supported) {
+        return;
+      }
       newPlaying = [];
       _ref = this.playing;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -103,6 +123,9 @@
     };
 
     AudioManager.prototype.checkReady = function() {
+      if (!this.supported) {
+        return;
+      }
       if (this.waitingToLoadCount === 0) {
         if (readyCallback) {
           readyCallback();
@@ -112,6 +135,9 @@
     };
 
     AudioManager.prototype.ready = function(callback) {
+      if (!this.supported) {
+        callback();
+      }
       readyCallback = callback;
       return this.checkReady();
     };

@@ -16,11 +16,20 @@ class AudioManager
   constructor: ->
     @buffers = {}
     @waitingToLoadCount = 0
-    window.AudioContext = window.AudioContext || window.webkitAudioContext
-    @context = new AudioContext()
     @playing = []
+    window.AudioContext = window.AudioContext || window.webkitAudioContext
+    window.AudioContext = null
+    if AudioContext
+      @supported = true
+      @context = new AudioContext()
+    else
+      @support = false
+      @context = null
+      alert "Audio for this game is not supported on your device."
 
   load: (uri, name) ->
+    if not @supported
+      return
     self = this
     @waitingToLoadCount++
     request = new XMLHttpRequest()
@@ -34,6 +43,8 @@ class AudioManager
     request.send()
 
   play: (name) ->
+    if not @supported
+      return
     source = @context.createBufferSource()
     source.buffer = @buffers[name]
     source.connect @context.destination
@@ -44,12 +55,16 @@ class AudioManager
     @playing.push([name, source])
 
   stopAll: ->
+    if not @supported
+      return
     for info in @playing
       [name, source] = info
       source.disconnect(0)
     @playing = []
 
   stopMatch: (pattern) ->
+    if not @supported
+      return
     newPlaying = []
     for info in @playing
       [name, source] = info
@@ -60,12 +75,16 @@ class AudioManager
     @playing = newPlaying
 
   checkReady: ->
+    if not @supported
+      return
     if @waitingToLoadCount is 0
       if readyCallback
         readyCallback()
         readyCallback = null
 
   ready: (callback) ->
+    if not @supported
+      callback()
     readyCallback = callback
     @checkReady()
 
