@@ -65,11 +65,10 @@ article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, 
 
 /* line 7, simon.scss */
 .simon-buttons {
-  width: 400px;
-  margin: 20px auto;
+  width: 100%;
 }
 
-/* line 12, simon.scss */
+/* line 11, simon.scss */
 .simon-button {
   filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=40);
   opacity: 0.4;
@@ -79,42 +78,42 @@ article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, 
   *vertical-align: auto;
   zoom: 1;
   *display: inline;
-  height: 200px;
-  width: 200px;
+  width: 50%;
+  height: 50%;
   cursor: pointer;
 }
-/* line 18, simon.scss */
-.simon-button:hover, .simon-button.hover {
+/* line 17, simon.scss */
+.simon-button.active {
   filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
   opacity: 1;
 }
 
-/* line 23, simon.scss */
+/* line 22, simon.scss */
 .simon-button-1 {
   background: red;
 }
 
-/* line 24, simon.scss */
+/* line 23, simon.scss */
 .simon-button-2 {
   background: blue;
 }
 
-/* line 25, simon.scss */
+/* line 24, simon.scss */
 .simon-button-3 {
   background: green;
 }
 
-/* line 26, simon.scss */
+/* line 25, simon.scss */
 .simon-button-4 {
   background: yellow;
 }
 
-/* line 27, simon.scss */
+/* line 26, simon.scss */
 .simon-button-5 {
   background: pink;
 }
 
-/* line 28, simon.scss */
+/* line 27, simon.scss */
 .simon-button-6 {
   background: orange;
 }

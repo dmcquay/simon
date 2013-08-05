@@ -1,21 +1,20 @@
 @import "compass/reset";
 @import "compass/css3";
 
-$button-size: 200px;
 $columns: 2;
+$rows: 2;
 
 .simon-buttons {
-    width: $button-size * $columns;
-    margin: 20px auto;
+    width: 100%;
 }
 
 .simon-button {
     @include opacity(0.4);
     @include inline-block;
-    height: $button-size;
-    width: $button-size;
+    width: 100% / $columns;
+    height: 100% / $rows;
     cursor: pointer;
-    &:hover, &.hover {
+    &.active {
         @include opacity(1);
     }
 }

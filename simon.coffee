@@ -28,9 +28,6 @@ class AudioLoader
     audio.src = uri
     @audios[uri] = audio
 
-  get: (uri) ->
-    return @audios[uri]
-
   checkReady: ->
     if @filesToLoad is @filesLoaded
       if readyCallback
@@ -43,6 +40,16 @@ class AudioLoader
 
 
 delay = (ms, func) -> setTimeout func, ms
+
+
+$.fn.tclick = (onclick) ->
+  @.bind "touchstart", (e) ->
+    onclick.call this, e
+    e.stopPropagation()
+    e.preventDefault()
+  @.bind "click", (e) ->
+    onclick.call this, e
+  return this
 
 
 class Simon
@@ -72,6 +79,7 @@ class Simon
         @correctButton.fire()
     else
       @wrongButton.fire()
+      @start()
 
 
 class SimonUI
@@ -84,18 +92,32 @@ class SimonUI
   _initListeners: ->
     self = this
 
-    @buttons.on 'click', (evt) ->
+    eventNames = {
+      click: 'click',
+      mouseDown: 'mousedown',
+      mouseUp: 'mouseup'
+    }
+    if $('html').hasClass('mobile')
+      eventNames = {
+        click: 'click',
+        mouseDown: 'touchstart',
+        mouseUp: 'touchend'
+      }
+
+    @buttons.on eventNames.click, (evt) ->
       evt.preventDefault()
       btnNum = $(this).data('button-num')
       self.game.handleButtonPress(btnNum)
 
-    @buttons.on 'mousedown', ->
+    @buttons.on eventNames.mouseDown, ->
+      $(this).addClass('active');
       btnNum = $(this).data('button-num')
-      self.playButtonSound(btnNum)
+      self.playSound(btnNum)
 
-    @buttons.on 'mouseup', ->
+    @buttons.on eventNames.mouseUp, ->
+      $('.active').removeClass('active')
       btnNum = $(this).data('button-num')
-      self.stopButtonSound(btnNum)
+      self.stopSound()
 
     @game.wrongButton.subscribe ->
       self.handleWrongButton()
@@ -106,10 +128,11 @@ class SimonUI
   _loadAudio: ->
     @audioLoader = new AudioLoader()
     for button, btnNum in @buttons
-      @audioLoader.load(@_getButtonSoundUri(btnNum))
+      @audioLoader.load(@_getSoundUri(btnNum))
+    @audioLoader.load(@_getSoundUri('wrong'))
 
-  _getButtonSoundUri: (btnNum) ->
-    "sounds/btn#{btnNum+1}.wav"
+  _getSoundUri: (name) ->
+    "sounds/#{name}.wav"
 
   start: ->
     @game.start()
@@ -119,13 +142,13 @@ class SimonUI
     @game.handleButtonPress(btnNum)
 
   handleWrongButton: ->
-    console.log 'wrong button'
-
-  handleCorrectButton: ->
-    console.log 'correct'
+    @stopSound()
+    @playSound('wrong')
+    @currentAudio = null # prevent stopping the sound
+    delay 200, ->
+      alert('Game Over')
 
   handlePatternComplete: ->
-    console.log 'pattern complete'
     @demoPattern(@game.pattern)
 
   demoPattern: (pattern) ->
@@ -140,28 +163,29 @@ class SimonUI
     delay 1000, ->
       doIt pattern.slice 0
 
-    console.log "next pattern is #{pattern}"
-
   simulateButton: (btnNum, callback) ->
     $btn = $(@buttons[btnNum])
-    $btn.addClass('hover')
-    @playButtonSound(btnNum)
+    $btn.addClass('active')
+    @playSound(btnNum)
     delay 500, ->
-      $btn.removeClass('hover')
+      $btn.removeClass('active')
       callback()
 
-  playButtonSound: (btnNum) ->
-    audio = @audioLoader.get(@_getButtonSoundUri(btnNum))
-    audio.currentTime = 0
-    audio.play()
+  playSound: (btnNum) ->
+    if @currentAudio
+      @currentAudio.pause()
+    @currentAudio = new Audio(@_getSoundUri(btnNum))
+    @currentAudio.play()
 
-  stopButtonSound: (btnNum) ->
-    audio = @audioLoader.get(@_getButtonSoundUri(btnNum))
-    delay 200, ->
-      audio.pause()
+  stopSound: ->
+    if @currentAudio
+      @currentAudio.pause()
+    @currentAudio = null
 
 
 $(->
+  $('.simon-buttons').css('height', window.innerHeight + 'px');
+
   $buttons = $('.simon-button')
   simon = new Simon $buttons.length
   simonUI = new SimonUI $buttons, simon

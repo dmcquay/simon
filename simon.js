@@ -53,10 +53,6 @@
       return this.audios[uri] = audio;
     };
 
-    AudioLoader.prototype.get = function(uri) {
-      return this.audios[uri];
-    };
-
     AudioLoader.prototype.checkReady = function() {
       if (this.filesToLoad === this.filesLoaded) {
         if (readyCallback) {
@@ -77,6 +73,18 @@
 
   delay = function(ms, func) {
     return setTimeout(func, ms);
+  };
+
+  $.fn.tclick = function(onclick) {
+    this.bind("touchstart", function(e) {
+      onclick.call(this, e);
+      e.stopPropagation();
+      return e.preventDefault();
+    });
+    this.bind("click", function(e) {
+      return onclick.call(this, e);
+    });
+    return this;
   };
 
   Simon = (function() {
@@ -110,7 +118,8 @@
           return this.correctButton.fire();
         }
       } else {
-        return this.wrongButton.fire();
+        this.wrongButton.fire();
+        return this.start();
       }
     };
 
@@ -134,27 +143,41 @@
     }
 
     SimonUI.prototype._initListeners = function() {
-      var self;
+      var eventNames, self;
 
       self = this;
-      this.buttons.on('click', function(evt) {
+      eventNames = {
+        click: 'click',
+        mouseDown: 'mousedown',
+        mouseUp: 'mouseup'
+      };
+      if ($('html').hasClass('mobile')) {
+        eventNames = {
+          click: 'click',
+          mouseDown: 'touchstart',
+          mouseUp: 'touchend'
+        };
+      }
+      this.buttons.on(eventNames.click, function(evt) {
         var btnNum;
 
         evt.preventDefault();
         btnNum = $(this).data('button-num');
         return self.game.handleButtonPress(btnNum);
       });
-      this.buttons.on('mousedown', function() {
+      this.buttons.on(eventNames.mouseDown, function() {
         var btnNum;
 
+        $(this).addClass('active');
         btnNum = $(this).data('button-num');
-        return self.playButtonSound(btnNum);
+        return self.playSound(btnNum);
       });
-      this.buttons.on('mouseup', function() {
+      this.buttons.on(eventNames.mouseUp, function() {
         var btnNum;
 
+        $('.active').removeClass('active');
         btnNum = $(this).data('button-num');
-        return self.stopButtonSound(btnNum);
+        return self.stopSound();
       });
       this.game.wrongButton.subscribe(function() {
         return self.handleWrongButton();
@@ -165,20 +188,19 @@
     };
 
     SimonUI.prototype._loadAudio = function() {
-      var btnNum, button, _i, _len, _ref, _results;
+      var btnNum, button, _i, _len, _ref;
 
       this.audioLoader = new AudioLoader();
       _ref = this.buttons;
-      _results = [];
       for (btnNum = _i = 0, _len = _ref.length; _i < _len; btnNum = ++_i) {
         button = _ref[btnNum];
-        _results.push(this.audioLoader.load(this._getButtonSoundUri(btnNum)));
+        this.audioLoader.load(this._getSoundUri(btnNum));
       }
-      return _results;
+      return this.audioLoader.load(this._getSoundUri('wrong'));
     };
 
-    SimonUI.prototype._getButtonSoundUri = function(btnNum) {
-      return "sounds/btn" + (btnNum + 1) + ".wav";
+    SimonUI.prototype._getSoundUri = function(name) {
+      return "sounds/" + name + ".wav";
     };
 
     SimonUI.prototype.start = function() {
@@ -191,15 +213,15 @@
     };
 
     SimonUI.prototype.handleWrongButton = function() {
-      return console.log('wrong button');
-    };
-
-    SimonUI.prototype.handleCorrectButton = function() {
-      return console.log('correct');
+      this.stopSound();
+      this.playSound('wrong');
+      this.currentAudio = null;
+      return delay(200, function() {
+        return alert('Game Over');
+      });
     };
 
     SimonUI.prototype.handlePatternComplete = function() {
-      console.log('pattern complete');
       return this.demoPattern(this.game.pattern);
     };
 
@@ -216,39 +238,36 @@
           }
         });
       };
-      delay(1000, function() {
+      return delay(1000, function() {
         return doIt(pattern.slice(0));
       });
-      return console.log("next pattern is " + pattern);
     };
 
     SimonUI.prototype.simulateButton = function(btnNum, callback) {
       var $btn;
 
       $btn = $(this.buttons[btnNum]);
-      $btn.addClass('hover');
-      this.playButtonSound(btnNum);
+      $btn.addClass('active');
+      this.playSound(btnNum);
       return delay(500, function() {
-        $btn.removeClass('hover');
+        $btn.removeClass('active');
         return callback();
       });
     };
 
-    SimonUI.prototype.playButtonSound = function(btnNum) {
-      var audio;
-
-      audio = this.audioLoader.get(this._getButtonSoundUri(btnNum));
-      audio.currentTime = 0;
-      return audio.play();
+    SimonUI.prototype.playSound = function(btnNum) {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+      }
+      this.currentAudio = new Audio(this._getSoundUri(btnNum));
+      return this.currentAudio.play();
     };
 
-    SimonUI.prototype.stopButtonSound = function(btnNum) {
-      var audio;
-
-      audio = this.audioLoader.get(this._getButtonSoundUri(btnNum));
-      return delay(200, function() {
-        return audio.pause();
-      });
+    SimonUI.prototype.stopSound = function() {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+      }
+      return this.currentAudio = null;
     };
 
     return SimonUI;
@@ -258,6 +277,7 @@
   $(function() {
     var $buttons, simon, simonUI;
 
+    $('.simon-buttons').css('height', window.innerHeight + 'px');
     $buttons = $('.simon-button');
     simon = new Simon($buttons.length);
     simonUI = new SimonUI($buttons, simon);
