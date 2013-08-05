@@ -31,7 +31,6 @@ class AudioManager
         self.buffers[name] = buffer
         self.waitingToLoadCount--
         self.checkReady()
-        console.log("finished loading #{uri}")
     request.send()
 
   play: (name) ->
