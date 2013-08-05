@@ -2,15 +2,25 @@ doctype 5
 html(lang="en")
     head
         title "Simple Simon Game"
+        meta(name="viewport", content="width=device-width, initial-scale=1, user-scalable=no")
         link(rel="stylesheet", href="simon.css")
         script(src="browser.js")
         script(src="http://code.jquery.com/jquery-2.0.3.min.js")
         script(src="simon.js")
     body
+        .dialog-wrapper1
+            .dialog-wrapper2
+                .dialog.start-game
+                    p Simple Simon Game
+                    button.start Start
+                .dialog.game-over
+                    p.game-over Game Over
+                    p
+                        # Rounds:
+                        span.num-rounds
+                    button.start New Game
         ul.simon-buttons
             li(class="simon-button simon-button-1")
             li(class="simon-button simon-button-2")
             li(class="simon-button simon-button-3")
             li(class="simon-button simon-button-4")
-//            li(class="simon-button simon-button-5")
-//            li(class="simon-button simon-button-6")

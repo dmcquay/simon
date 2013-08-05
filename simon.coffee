@@ -5,31 +5,63 @@ class Event
   subscribe: (callback) ->
     @listeners.push(callback)
 
-  fire: ->
+  fire: (obj) ->
     for listener in @listeners
-      listener()
+      listener(obj)
 
 
-class AudioLoader
+class AudioManager
   readyCallback = null
 
   constructor: ->
-    @filesToLoad = 0
-    @filesLoaded = 0
-    @audios = {}
+    @buffers = {}
+    @waitingToLoadCount = 0
+    window.AudioContext = window.AudioContext || window.webkitAudioContext
+    @context = new AudioContext()
+    @playing = []
 
-  load: (uri) ->
+  load: (uri, name) ->
     self = this
-    audio = new Audio()
-    callback = ->
-      self.filesLoaded++
-      self.checkReady()
-    audio.addEventListener 'canplaythrough', callback, false
-    audio.src = uri
-    @audios[uri] = audio
+    @waitingToLoadCount++
+    request = new XMLHttpRequest()
+    request.open 'GET', uri, true
+    request.responseType = 'arraybuffer'
+    request.onload = ->
+      self.context.decodeAudioData request.response, (buffer) ->
+        self.buffers[name] = buffer
+        self.waitingToLoadCount--
+        self.checkReady()
+        console.log("finished loading #{uri}")
+    request.send()
+
+  play: (name) ->
+    source = @context.createBufferSource()
+    source.buffer = @buffers[name]
+    source.connect @context.destination
+    if source.start
+      source.start 0
+    else
+      source.noteOn 0
+    @playing.push([name, source])
+
+  stopAll: ->
+    for info in @playing
+      [name, source] = info
+      source.disconnect(0)
+    @playing = []
+
+  stopMatch: (pattern) ->
+    newPlaying = []
+    for info in @playing
+      [name, source] = info
+      if pattern.test(name)
+        source.disconnect(0)
+      else
+        newPlaying.push(info)
+    @playing = newPlaying
 
   checkReady: ->
-    if @filesToLoad is @filesLoaded
+    if @waitingToLoadCount is 0
       if readyCallback
         readyCallback()
         readyCallback = null
@@ -40,16 +72,6 @@ class AudioLoader
 
 
 delay = (ms, func) -> setTimeout func, ms
-
-
-$.fn.tclick = (onclick) ->
-  @.bind "touchstart", (e) ->
-    onclick.call this, e
-    e.stopPropagation()
-    e.preventDefault()
-  @.bind "click", (e) ->
-    onclick.call this, e
-  return this
 
 
 class Simon
@@ -78,7 +100,7 @@ class Simon
       else
         @correctButton.fire()
     else
-      @wrongButton.fire()
+      @wrongButton.fire(@pattern.length-1)
       @start()
 
 
@@ -99,7 +121,7 @@ class SimonUI
     }
     if $('html').hasClass('mobile')
       eventNames = {
-        click: 'click',
+        click: 'touchstart',
         mouseDown: 'touchstart',
         mouseUp: 'touchend'
       }
@@ -119,34 +141,36 @@ class SimonUI
       btnNum = $(this).data('button-num')
       self.stopSound()
 
-    @game.wrongButton.subscribe ->
-      self.handleWrongButton()
+    @game.wrongButton.subscribe (numRounds) ->
+      self.handleWrongButton numRounds
 
     @game.patternComplete.subscribe ->
       self.handlePatternComplete()
 
   _loadAudio: ->
-    @audioLoader = new AudioLoader()
+    @audioManager = new AudioManager()
     for button, btnNum in @buttons
-      @audioLoader.load(@_getSoundUri(btnNum))
-    @audioLoader.load(@_getSoundUri('wrong'))
+      @audioManager.load(@_getSoundUri(btnNum), btnNum)
+    @audioManager.load(@_getSoundUri('wrong'), 'wrong')
 
   _getSoundUri: (name) ->
     "sounds/#{name}.wav"
 
   start: ->
-    @game.start()
-    @demoPattern(@game.pattern)
+    self = this
+    @audioManager.ready ->
+      self.game.start()
+      self.demoPattern(self.game.pattern)
 
   handleButtonPress: (btnNum) ->
     @game.handleButtonPress(btnNum)
 
-  handleWrongButton: ->
+  handleWrongButton: (numRounds) ->
     @stopSound()
     @playSound('wrong')
-    @currentAudio = null # prevent stopping the sound
     delay 200, ->
-      alert('Game Over')
+      $('.num-rounds').html(numRounds)
+      $('.game-over').show()
 
   handlePatternComplete: ->
     @demoPattern(@game.pattern)
@@ -172,16 +196,12 @@ class SimonUI
       callback()
 
   playSound: (btnNum) ->
-    if @currentAudio
-      @currentAudio.pause()
-    @currentAudio = new Audio(@_getSoundUri(btnNum))
-    @currentAudio.play()
+    @audioManager.play(btnNum)
 
   stopSound: ->
-    if @currentAudio
-      @currentAudio.pause()
-    @currentAudio = null
-
+    self = this
+    delay 100, ->
+      self.audioManager.stopMatch(/\d/)
 
 $(->
   $('.simon-buttons').css('height', window.innerHeight + 'px');
@@ -189,5 +209,8 @@ $(->
   $buttons = $('.simon-button')
   simon = new Simon $buttons.length
   simonUI = new SimonUI $buttons, simon
-  simonUI.start()
+
+  $('.start').on 'click', ->
+    $(this).closest('.dialog').hide();
+    simonUI.start()
 )
