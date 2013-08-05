@@ -53,8 +53,7 @@
         return self.context.decodeAudioData(request.response, function(buffer) {
           self.buffers[name] = buffer;
           self.waitingToLoadCount--;
-          self.checkReady();
-          return console.log("finished loading " + uri);
+          return self.checkReady();
         });
       };
       return request.send();
